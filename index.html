@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algeria Wilaya Border Guessr (Test Version)</title>
+    <title>Algeria Wilaya Guessr - Device Persistent Slot</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -42,7 +42,7 @@
 
         h1 {
             margin: 0;
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             color: var(--text-main);
             display: flex;
             align-items: center;
@@ -51,7 +51,7 @@
 
         #game-dashboard {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             align-items: center;
             font-size: 0.95rem;
         }
@@ -126,7 +126,7 @@
             100% { transform: rotate(360deg); }
         }
 
-        #summary-modal {
+        .modal-overlay {
             display: none;
             position: fixed;
             top: 0;
@@ -176,7 +176,7 @@
             color: var(--text-main);
             border-radius: 8px;
             font-size: 1rem;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             text-align: center;
         }
 
@@ -196,6 +196,7 @@
             cursor: pointer;
             transition: all 0.2s ease;
             box-shadow: 0 4px 15px rgba(77, 171, 247, 0.3);
+            margin: 5px;
         }
 
         .btn:hover {
@@ -203,19 +204,27 @@
             transform: translateY(-2px);
         }
 
-        .test-btn {
-            background: #fab005;
-            color: #0b0b14;
-            border: none;
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            border-radius: 6px;
+        .mode-btn {
+            background: #1f2038;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 14px 20px;
+            width: 100%;
+            border-radius: 10px;
             cursor: pointer;
-            margin-left: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            margin: 8px 0;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
         }
-        .test-btn:hover {
-            background: #f59f00;
+
+        .mode-btn:hover {
+            border-color: var(--accent-blue);
+            background: #252642;
         }
 
         .leaderboard-table {
@@ -272,22 +281,49 @@
         <div id="loading-text" style="font-size: 1.1rem; color: #a5a5c0;">Loading Algeria map boundaries...</div>
     </div>
 
+    <div id="mode-modal" class="modal-overlay" style="display: flex;">
+        <div class="modal-content">
+            <h2>🇩🇿 Algeria Guessr</h2>
+            <p style="color: #8c8ca0; margin-bottom: 20px;">Choose your game mode to begin:</p>
+            
+            <button class="mode-btn" onclick="startGameMode('classic')">
+                <div>
+                    <div>Classic Mode</div>
+                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">Master all wilayas (fewest attempts)</span>
+                </div>
+                <span>➡️</span>
+            </button>
+
+            <button class="mode-btn" onclick="startGameMode('blitz')">
+                <div>
+                    <div>⚡ Blitz Mode</div>
+                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">60-second speedrun rush</span>
+                </div>
+                <span>➡️</span>
+            </button>
+
+            <button class="mode-btn" onclick="startGameMode('hardcore')">
+                <div>
+                    <div>💀 Hardcore Mode</div>
+                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">One mistake and game over</span>
+                </div>
+                <span>➡️</span>
+            </button>
+        </div>
+    </div>
+
     <header>
-        <h1>🇩🇿 <span>Algeria Wilaya Guessr</span> <button class="test-btn" onclick="endGame()">⚡ Test Leaderboard</button></h1>
+        <h1 style="cursor: pointer;" onclick="openModeMenu()" title="Change Mode">🇩🇿 <span id="mode-title-display">Classic</span> <span style="font-size: 0.8rem; background: var(--border-color); padding: 2px 6px; border-radius: 4px;">Change</span></h1>
         <div id="game-dashboard">
             <div class="dash-card">
                 <span class="label">Target Wilaya</span>
                 <span class="value" id="target-wilaya-name">Preparing...</span>
             </div>
-            <div class="dash-card">
-                <span class="label">Round</span>
-                <span class="value"><span id="current-round">0</span>/<span id="total-rounds">0</span></span>
-            </div>
-            <div class="dash-card">
-                <span class="label">Attempts</span>
+            <div class="dash-card" id="card-metric-label">
+                <span class="label" id="metric-title">Attempts</span>
                 <span class="value" id="score" style="color: var(--accent-green);">0</span>
             </div>
-            <div class="dash-card">
+            <div class="dash-card" id="card-streak-container">
                 <span class="label">Streak</span>
                 <span class="value" id="streak" style="color: #fab005;">0</span>
             </div>
@@ -295,32 +331,30 @@
     </header>
 
     <div id="map"></div>
-
     <div id="game-alert"></div>
 
-    <div id="summary-modal">
+    <div id="summary-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2>🏆 Mission Complete!</h2>
-            <p>You have successfully mastered all the wilayas of Algeria!</p>
+            <h2>🏆 Game Over!</h2>
+            <p id="summary-message">Great job exploring the map!</p>
             <div class="stat-box">
-                Total Attempts: <strong id="final-score" style="color: var(--accent-green);">0</strong><br>
-                <span style="font-size: 0.85rem; color: #8c8ca0;">(Lower attempts = better performance)</span>
+                <span id="final-score-label">Final Score:</span> <strong id="final-score" style="color: var(--accent-green);">0</strong>
             </div>
             <div id="submission-section">
-                <p style="margin: 5px 0 10px; font-size: 0.9rem;">Enter your name for the leaderboard:</p>
+                <p style="margin: 5px 0 5px; font-size: 0.9rem;">Your Device Profile Name:</p>
                 <input type="text" id="player-name-input" placeholder="Your Name" maxlength="20">
                 <br>
-                <button class="btn" id="submit-score-btn" onclick="submitScore()">Submit Score</button>
+                <button class="btn" id="submit-score-btn" onclick="submitScore()">Update My Device Score</button>
             </div>
             <div id="leaderboard-container" style="margin-top: 25px;">
-                <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px;">🌍 Global Leaderboard (Fewest Attempts)</h3>
+                <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px;">🌍 Global Leaderboard</h3>
                 <div style="max-height: 180px; overflow-y: auto;">
                     <table class="leaderboard-table">
                         <thead>
                             <tr>
                                 <th>Rank</th>
                                 <th>Name</th>
-                                <th>Attempts</th>
+                                <th>Score</th>
                             </tr>
                         </thead>
                         <tbody id="leaderboard-body">
@@ -329,7 +363,7 @@
                     </table>
                 </div>
             </div>
-            <button class="btn" style="margin-top: 20px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="initGame()">Play Again</button>
+            <button class="btn" style="margin-top: 20px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="openModeMenu()">Change Mode / Play Again</button>
         </div>
     </div>
 
@@ -343,23 +377,36 @@
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
+        // Generate or fetch a unique Device ID stored on this browser
+        let deviceId = localStorage.getItem('algeria_guessr_device_id');
+        if (!deviceId) {
+            deviceId = 'dev_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('algeria_guessr_device_id', deviceId);
+        }
+
         let map, geojsonLayer;
         let wilayasData = [];
         let gameQueue = [];
         let targetWilaya = null;
         let score = 0;
         let streak = 0;
-        let currentRoundIndex = 0;
-        let totalWilayasCount = 0;
+        let currentMode = 'classic';
         let locked = false;
         let masteredWilayas = new Set();
         let scoreSubmitted = false;
+        let blitzTimer = null;
+        let timeLeft = 60;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedName = localStorage.getItem('algeria_guessr_player_name');
+            if (savedName) {
+                document.getElementById('player-name-input').value = savedName;
+            }
+        });
 
         let audioCtx = null;
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
         function playSound(type) {
@@ -378,35 +425,25 @@
                     osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
                     gainNode.gain.setValueAtTime(0.15, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                    osc.start(now);
-                    osc.stop(now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
                 } else if (type === 'incorrect') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(300, now);
                     osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
                     gainNode.gain.setValueAtTime(0.12, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-                    osc.start(now);
-                    osc.stop(now + 0.25);
+                    osc.start(now); osc.stop(now + 0.25);
                 } else if (type === 'click') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(600, now);
                     gainNode.gain.setValueAtTime(0.05, now);
                     gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-                    osc.start(now);
-                    osc.stop(now + 0.05);
+                    osc.start(now); osc.stop(now + 0.05);
                 }
-            } catch (e) {
-                console.log("Audio skipped", e);
-            }
+            } catch (e) { console.log("Audio skipped", e); }
         }
 
-        map = L.map('map', {
-            center: [28.0339, 1.6596],
-            zoom: 5,
-            minZoom: 5,
-            maxZoom: 9
-        });
+        map = L.map('map', { center: [28.0339, 1.6596], zoom: 5, minZoom: 5, maxZoom: 9 });
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap & CARTO',
@@ -415,49 +452,77 @@
         }).addTo(map);
 
         fetch('https://raw.githubusercontent.com/fr33dz/Algeria-geojson/master/all-wilayas.geojson')
-            .then(res => {
-                if (!res.ok) throw new Error("Failed primary fetch");
-                return res.json();
-            })
-            .then(data => {
-                processMapData(data);
-            })
+            .then(res => res.json())
+            .then(data => processMapData(data))
             .catch(() => {
-                return fetch('https://cdn.jsdelivr.net/gh/fr33dz/Algeria-geojson@master/all-wilayas.geojson')
+                fetch('https://cdn.jsdelivr.net/gh/fr33dz/Algeria-geojson@master/all-wilayas.geojson')
                     .then(res => res.json())
-                    .then(data => processMapData(data))
-                    .catch(() => {
-                        processMapData(fallbackGeoJSON);
-                    });
+                    .then(data => processMapData(data));
             });
 
         function processMapData(data) {
             wilayasData = data.features.filter(f => f.properties && (f.properties.name || f.properties.Wilaya || f.properties.Nom));
-            
-            wilayasData.forEach(f => {
-                f.properties.cleanName = f.properties.name || f.properties.Wilaya || f.properties.Nom;
-            });
-
-            totalWilayasCount = wilayasData.length;
-            document.getElementById('total-rounds').innerText = totalWilayasCount;
+            wilayasData.forEach(f => { f.properties.cleanName = f.properties.name || f.properties.Wilaya || f.properties.Nom; });
 
             const loader = document.getElementById('loading-overlay');
             loader.style.opacity = '0';
             setTimeout(() => loader.style.display = 'none', 400);
-
-            initGame();
         }
 
-        function initGame() {
+        function openModeMenu() {
+            if (blitzTimer) clearInterval(blitzTimer);
             document.getElementById('summary-modal').style.display = 'none';
-            score = 5; // dummy score for testing
+            document.getElementById('mode-modal').style.display = 'flex';
+        }
+
+        function startGameMode(mode) {
+            currentMode = mode;
+            document.getElementById('mode-modal').style.display = 'none';
+            document.getElementById('summary-modal').style.display = 'none';
+
+            score = 0;
             streak = 0;
-            currentRoundIndex = 0;
             scoreSubmitted = false;
-            document.getElementById('submission-section').style.display = 'block';
-            document.getElementById('player-name-input').value = '';
             masteredWilayas.clear();
-            gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
+            if (blitzTimer) clearInterval(blitzTimer);
+
+            const btn = document.getElementById('submit-score-btn');
+            btn.innerText = "Update My Device Score";
+            btn.disabled = false;
+            document.getElementById('submission-section').style.display = 'block';
+
+            const titleDisplay = document.getElementById('mode-title-display');
+            const metricTitle = document.getElementById('metric-title');
+            const streakContainer = document.getElementById('card-streak-container');
+
+            if (mode === 'classic') {
+                titleDisplay.innerText = "Classic";
+                metricTitle.innerText = "Attempts";
+                streakContainer.style.display = 'flex';
+                gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
+            } else if (mode === 'blitz') {
+                titleDisplay.innerText = "Blitz (60s)";
+                metricTitle.innerText = "Correct";
+                streakContainer.style.display = 'none';
+                gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
+                timeLeft = 60;
+                metricTitle.innerText = "Time Left";
+                document.getElementById('score').innerText = timeLeft + "s";
+                
+                blitzTimer = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('score').innerText = timeLeft + "s";
+                    if (timeLeft <= 0) {
+                        clearInterval(blitzTimer);
+                        endGame();
+                    }
+                }, 1000);
+            } else if (mode === 'hardcore') {
+                titleDisplay.innerText = "Hardcore";
+                metricTitle.innerText = "Score";
+                streakContainer.style.display = 'flex';
+                gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
+            }
 
             updateScoreboard();
             loadNextRound();
@@ -465,68 +530,39 @@
 
         function loadNextRound() {
             locked = false;
-            
             if (gameQueue.length === 0) {
-                endGame();
-                return;
+                if (currentMode === 'blitz') {
+                    gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
+                } else {
+                    endGame();
+                    return;
+                }
             }
-
-            currentRoundIndex++;
-            document.getElementById('current-round').innerText = totalWilayasCount - gameQueue.length;
 
             targetWilaya = gameQueue.pop();
             document.getElementById('target-wilaya-name').innerText = targetWilaya.properties.cleanName;
-
             renderMapLayer();
         }
 
         function renderMapLayer() {
-            if (geojsonLayer) {
-                map.removeLayer(geojsonLayer);
-            }
+            if (geojsonLayer) map.removeLayer(geojsonLayer);
 
             geojsonLayer = L.geoJson(wilayasData, {
                 style: function(feature) {
                     const name = feature.properties.cleanName;
                     if (masteredWilayas.has(name)) {
-                        return {
-                            fillColor: '#40c057',
-                            weight: 1,
-                            opacity: 0.7,
-                            color: '#2b8a3e',
-                            fillOpacity: 0.5
-                        };
+                        return { fillColor: '#40c057', weight: 1, opacity: 0.7, color: '#2b8a3e', fillOpacity: 0.5 };
                     }
-                    return {
-                        fillColor: '#1f2038',
-                        weight: 1,
-                        opacity: 0.7,
-                        color: '#444460',
-                        fillOpacity: 0.35
-                    };
+                    return { fillColor: '#1f2038', weight: 1, opacity: 0.7, color: '#444460', fillOpacity: 0.35 };
                 },
                 onEachFeature: function(feature, layer) {
                     layer.on({
                         mouseover: function(e) {
-                            if (locked) return;
-                            const name = feature.properties.cleanName;
-                            if (masteredWilayas.has(name)) return;
-                            e.target.setStyle({
-                                weight: 2,
-                                color: '#ffec99',
-                                fillColor: '#fab005',
-                                fillOpacity: 0.55
-                            });
+                            if (locked || masteredWilayas.has(feature.properties.cleanName)) return;
+                            e.target.setStyle({ weight: 2, color: '#ffec99', fillColor: '#fab005', fillOpacity: 0.55 });
                         },
-                        mouseout: function(e) {
-                            if (locked) return;
-                            geojsonLayer.resetStyle(e.target);
-                        },
-                        click: function(e) {
-                            if (locked) return;
-                            playSound('click');
-                            handleGuess(feature, layer);
-                        }
+                        mouseout: function(e) { if (!locked) geojsonLayer.resetStyle(e.target); },
+                        click: function(e) { if (locked) return; playSound('click'); handleGuess(feature, layer); }
                     });
                 }
             }).addTo(map);
@@ -537,122 +573,119 @@
             const clickedName = clickedFeature.properties.cleanName;
             const targetName = targetWilaya.properties.cleanName;
 
-            score++;
-
             if (clickedName === targetName) {
                 streak++;
                 playSound('correct');
                 masteredWilayas.add(targetName);
+                clickedLayer.setStyle({ fillColor: '#40c057', color: '#2b8a3e', fillOpacity: 0.85, weight: 2 });
+                
+                if (currentMode === 'classic') score++;
+                if (currentMode === 'blitz') score++;
+                if (currentMode === 'hardcore') score++;
 
-                clickedLayer.setStyle({
-                    fillColor: '#40c057',
-                    color: '#2b8a3e',
-                    fillOpacity: 0.85,
-                    weight: 2
-                });
                 showNotification(`🎉 Correct! It's ${targetName}.`, true);
-                
                 updateScoreboard();
-
-                setTimeout(() => {
-                    loadNextRound();
-                }, 1500);
-
+                setTimeout(() => loadNextRound(), 1200);
             } else {
-                streak = 0;
                 playSound('incorrect');
-                
-                clickedLayer.setStyle({
-                    fillColor: '#fa5252',
-                    color: '#c92a2a',
-                    fillOpacity: 0.85,
-                    weight: 2
-                });
+                clickedLayer.setStyle({ fillColor: '#fa5252', color: '#c92a2a', fillOpacity: 0.85, weight: 2 });
 
-                geojsonLayer.eachLayer(function(l) {
+                geojsonLayer.eachLayer(l => {
                     if (l.feature.properties.cleanName === targetName) {
-                        l.setStyle({
-                            fillColor: '#40c057',
-                            color: '#2b8a3e',
-                            fillOpacity: 0.85,
-                            weight: 2
-                        });
+                        l.setStyle({ fillColor: '#40c057', color: '#2b8a3e', fillOpacity: 0.85, weight: 2 });
                     }
                 });
 
+                if (currentMode === 'hardcore') {
+                    showNotification(`💀 Hardcore Game Over! You missed ${targetName}.`, false);
+                    setTimeout(() => endGame(), 2000);
+                    return;
+                }
+
+                streak = 0;
+                if (currentMode === 'classic') score++;
                 showNotification(`❌ You clicked ${clickedName}! Re-queuing ${targetName}.`, false);
                 updateScoreboard();
-
                 gameQueue.splice(Math.floor(Math.random() * (gameQueue.length + 1)), 0, targetWilaya);
-
-                setTimeout(() => {
-                    loadNextRound();
-                }, 2000);
+                setTimeout(() => loadNextRound(), 1800);
             }
         }
 
         function endGame() {
+            if (blitzTimer) clearInterval(blitzTimer);
             renderMapLayer();
-            document.getElementById('final-score').innerText = score;
+
+            let finalVal = score;
+            let summaryText = `You played ${currentMode.toUpperCase()} mode!`;
+            let scoreLabelText = "Final Score:";
+
+            if (currentMode === 'classic') {
+                scoreLabelText = "Total Attempts (Lower is better):";
+            } else if (currentMode === 'blitz') {
+                scoreLabelText = "Total Correct Hits in 60s:";
+            } else if (currentMode === 'hardcore') {
+                scoreLabelText = "Correct Wilayas Before Strike:";
+            }
+
+            document.getElementById('final-score-label').innerText = scoreLabelText;
+            document.getElementById('final-score').innerText = finalVal;
+            document.getElementById('summary-message').innerText = summaryText;
             document.getElementById('summary-modal').style.display = 'flex';
             fetchLeaderboard();
         }
 
         async function submitScore() {
-            if (!supabaseClient) {
-                alert("Supabase client is not initialized.");
-                return;
-            }
+            if (!supabaseClient) { alert("Supabase not configured!"); return; }
             if (scoreSubmitted) return;
-            const playerName = document.getElementById('player-name-input').value.trim();
+            
+            const playerNameInput = document.getElementById('player-name-input');
+            const playerName = playerNameInput.value.trim();
             
             if (!playerName) {
                 alert("Please enter your name!");
                 return;
             }
 
+            localStorage.setItem('algeria_guessr_player_name', playerName);
+
             const btn = document.getElementById('submit-score-btn');
-            btn.innerText = "Submitting...";
+            btn.innerText = "Updating...";
             btn.disabled = true;
 
+            // We upsert using deviceId as the unique conflict target
             const { error } = await supabaseClient
                 .from('leaderboard')
-                .insert([{ player_name: playerName, score: score }]);
+                .upsert({ 
+                    device_id: deviceId, 
+                    player_name: `${playerName} [${currentMode.toUpperCase()}]`, 
+                    score: score 
+                }, { onConflict: 'device_id' });
 
             if (error) {
-                console.error("Error submitting score:", error);
-                alert("Failed to submit score. Check console.");
-                btn.innerText = "Submit Score";
+                console.error("Error updating score:", error);
+                alert("Failed to update score. Check database schema for device_id column.");
+                btn.innerText = "Update My Device Score";
                 btn.disabled = false;
             } else {
                 scoreSubmitted = true;
-                document.getElementById('submission-section').innerHTML = `<p style="color: var(--accent-green); font-weight: bold;">Score submitted successfully!</p>`;
+                document.getElementById('submission-section').innerHTML = `<p style="color: var(--accent-green); font-weight: bold;">Device slot updated successfully!</p>`;
                 fetchLeaderboard();
             }
         }
 
         async function fetchLeaderboard() {
             const tbody = document.getElementById('leaderboard-body');
-            if (!supabaseClient) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Supabase not configured</td></tr>`;
-                return;
-            }
+            if (!supabaseClient) { tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Supabase missing</td></tr>`; return; }
 
             tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">Loading scores...</td></tr>`;
 
             const { data, error } = await supabaseClient
                 .from('leaderboard')
                 .select('player_name, score')
-                .order('score', { ascending: true })
+                .order('score', { ascending: currentMode === 'classic' })
                 .limit(10);
 
-            if (error) {
-                console.error("Error fetching leaderboard:", error);
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Failed to load leaderboard</td></tr>`;
-                return;
-            }
-
-            if (!data || data.length === 0) {
+            if (error || !data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">No scores yet. Be the first!</td></tr>`;
                 return;
             }
@@ -660,11 +693,7 @@
             tbody.innerHTML = '';
             data.forEach((row, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>#${index + 1}</td>
-                    <td>${escapeHtml(row.player_name)}</td>
-                    <td>${row.score}</td>
-                `;
+                tr.innerHTML = `<td>#${index + 1}</td><td>${escapeHtml(row.player_name)}</td><td>${row.score}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -679,18 +708,15 @@
             note.style.color = 'white';
             note.innerText = text;
             note.classList.add('show');
-
-            setTimeout(() => {
-                note.classList.remove('show');
-            }, 1800);
+            setTimeout(() => note.classList.remove('show'), 1500);
         }
 
         function updateScoreboard() {
-            document.getElementById('score').innerText = score;
+            if (currentMode !== 'blitz') {
+                document.getElementById('score').innerText = score;
+            }
             document.getElementById('streak').innerText = streak;
         }
-
-        const fallbackGeoJSON = { "type": "FeatureCollection", "features": [] };
     </script>
 </body>
 </html>
