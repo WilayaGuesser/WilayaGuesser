@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algeria Wilaya Border Guessr (Test Version)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --bg-main: #0b0b14;
+            --panel-bg: rgba(21, 21, 34, 0.9);
+            --border-color: #2a2a40;
+            --accent-blue: #4dabf7;
+            --accent-green: #40c057;
+            --accent-red: #fa5252;
+            --text-main: #f1f1f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.4rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #game-dashboard {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            font-size: 0.95rem;
+        }
+
+        .dash-card {
+            background: rgba(25, 25, 40, 0.6);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dash-card span.label {
+            font-size: 0.75rem;
+            color: #8c8ca0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dash-card span.value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        #target-wilaya-name {
+            color: var(--accent-blue);
+            font-size: 1.3rem;
+            font-weight: 800;
+            text-shadow: 0 0 12px rgba(77, 171, 247, 0.4);
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+            background-color: var(--bg-main);
+        }
+
+        .leaflet-container {
+            background: var(--bg-main) !important;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 11, 20, 0.95);
+            z-index: 3000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            transition: opacity 0.4s ease;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #summary-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(11, 11, 20, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #151522;
+            padding: 30px 40px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            max-width: 450px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--accent-blue);
+            font-size: 1.8rem;
+        }
+
+        .stat-box {
+            background: #1f2038;
+            margin: 15px 0;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 10px 14px;
+            background: #0b0b14;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-blue);
+            outline: none;
+        }
+
+        .btn {
+            background: var(--accent-blue);
+            color: var(--bg-main);
+            border: none;
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 15px rgba(77, 171, 247, 0.3);
+        }
+
+        .btn:hover {
+            background: #3b9be8;
+            transform: translateY(-2px);
+        }
+
+        .test-btn {
+            background: #fab005;
+            color: #0b0b14;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 15px;
+        }
+        .test-btn:hover {
+            background: #f59f00;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.95rem;
+        }
+
+        .leaderboard-table th, .leaderboard-table td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+        }
+
+        .leaderboard-table th {
+            color: #8c8ca0;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .leaderboard-table td:last-child, .leaderboard-table th:last-child {
+            text-align: right;
+        }
+
+        #game-alert {
+            position: fixed;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #game-alert.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text" style="font-size: 1.1rem; color: #a5a5c0;">Loading Algeria map boundaries...</div>
+    </div>
+
+    <header>
+        <h1>🇩🇿 <span>Algeria Wilaya Guessr</span> <button class="test-btn" onclick="endGame()">⚡ Test Leaderboard</button></h1>
+        <div id="game-dashboard">
+            <div class="dash-card">
+                <span class="label">Target Wilaya</span>
+                <span class="value" id="target-wilaya-name">Preparing...</span>
+            </div>
+            <div class="dash-card">
+                <span class="label">Round</span>
+                <span class="value"><span id="current-round">0</span>/<span id="total-rounds">0</span></span>
+            </div>
+            <div class="dash-card">
+                <span class="label">Attempts</span>
+                <span class="value" id="score" style="color: var(--accent-green);">0</span>
+            </div>
+            <div class="dash-card">
+                <span class="label">Streak</span>
+                <span class="value" id="streak" style="color: #fab005;">0</span>
+            </div>
+        </div>
+    </header>
+
+    <div id="map"></div>
+
+    <div id="game-alert"></div>
+
+    <div id="summary-modal">
+        <div class="modal-content">
+            <h2>🏆 Mission Complete!</h2>
+            <p>You have successfully mastered all the wilayas of Algeria!</p>
+            <div class="stat-box">
+                Total Attempts: <strong id="final-score" style="color: var(--accent-green);">0</strong><br>
+                <span style="font-size: 0.85rem; color: #8c8ca0;">(Lower attempts = better performance)</span>
+            </div>
+            <div id="submission-section">
+                <p style="margin: 5px 0 10px; font-size: 0.9rem;">Enter your name for the leaderboard:</p>
+                <input type="text" id="player-name-input" placeholder="Your Name" maxlength="20">
+                <br>
+                <button class="btn" id="submit-score-btn" onclick="submitScore()">Submit Score</button>
+            </div>
+            <div id="leaderboard-container" style="margin-top: 25px;">
+                <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px;">🌍 Global Leaderboard (Fewest Attempts)</h3>
+                <div style="max-height: 180px; overflow-y: auto;">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Name</th>
+                                <th>Attempts</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <tr><td colspan="3" style="text-align: center; color: #8c8ca0;">Loading scores...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <button class="btn" style="margin-top: 20px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="initGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://pnrqhybmayfjglhobodc.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_QRcUTD86I04ic4wHqPqYiQ_wCAeFR2D';
+        
+        let supabaseClient = null;
+        if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        let map, geojsonLayer;
+        let wilayasData = [];
+        let gameQueue = [];
+        let targetWilaya = null;
+        let score = 0;
+        let streak = 0;
+        let currentRoundIndex = 0;
+        let totalWilayasCount = 0;
+        let locked = false;
+        let masteredWilayas = new Set();
+        let scoreSubmitted = false;
+
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                    gainNode.gain.setValueAtTime(0.15, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'incorrect') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+                    gainNode.gain.setValueAtTime(0.12, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    gainNode.gain.setValueAtTime(0.05, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch (e) {
+                console.log("Audio skipped", e);
+            }
+        }
+
+        map = L.map('map', {
+            center: [28.0339, 1.6596],
+            zoom: 5,
+            minZoom: 5,
+            maxZoom: 9
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & CARTO',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        fetch('https://raw.githubusercontent.com/fr33dz/Algeria-geojson/master/all-wilayas.geojson')
+            .then(res => {
+                if (!res.ok) throw new Error("Failed primary fetch");
+                return res.json();
+            })
+            .then(data => {
+                processMapData(data);
+            })
+            .catch(() => {
+                return fetch('https://cdn.jsdelivr.net/gh/fr33dz/Algeria-geojson@master/all-wilayas.geojson')
+                    .then(res => res.json())
+                    .then(data => processMapData(data))
+                    .catch(() => {
+                        processMapData(fallbackGeoJSON);
+                    });
+            });
+
+        function processMapData(data) {
+            wilayasData = data.features.filter(f => f.properties && (f.properties.name || f.properties.Wilaya || f.properties.Nom));
+            
+            wilayasData.forEach(f => {
+                f.properties.cleanName = f.properties.name || f.properties.Wilaya || f.properties.Nom;
+            });
+
+            totalWilayasCount = wilayasData.length;
+            document.getElementById('total-rounds').innerText = totalWilayasCount;
+
+            const loader = document.getElementById('loading-overlay');
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 400);
+
+            initGame();
+        }
+
+        function initGame() {
+            document.getElementById('summary-modal').style.display = 'none';
+            score = 5; // dummy score for testing
+            streak = 0;
+            currentRoundIndex = 0;
+            scoreSubmitted = false;
+            document.getElementById('submission-section').style.display = 'block';
+            document.getElementById('player-name-input').value = '';
+            masteredWilayas.clear();
+            gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
+
+            updateScoreboard();
+            loadNextRound();
+        }
+
+        function loadNextRound() {
+            locked = false;
+            
+            if (gameQueue.length === 0) {
+                endGame();
+                return;
+            }
+
+            currentRoundIndex++;
+            document.getElementById('current-round').innerText = totalWilayasCount - gameQueue.length;
+
+            targetWilaya = gameQueue.pop();
+            document.getElementById('target-wilaya-name').innerText = targetWilaya.properties.cleanName;
+
+            renderMapLayer();
+        }
+
+        function renderMapLayer() {
+            if (geojsonLayer) {
+                map.removeLayer(geojsonLayer);
+            }
+
+            geojsonLayer = L.geoJson(wilayasData, {
+                style: function(feature) {
+                    const name = feature.properties.cleanName;
+                    if (masteredWilayas.has(name)) {
+                        return {
+                            fillColor: '#40c057',
+                            weight: 1,
+                            opacity: 0.7,
+                            color: '#2b8a3e',
+                            fillOpacity: 0.5
+                        };
+                    }
+                    return {
+                        fillColor: '#1f2038',
+                        weight: 1,
+                        opacity: 0.7,
+                        color: '#444460',
+                        fillOpacity: 0.35
+                    };
+                },
+                onEachFeature: function(feature, layer) {
+                    layer.on({
+                        mouseover: function(e) {
+                            if (locked) return;
+                            const name = feature.properties.cleanName;
+                            if (masteredWilayas.has(name)) return;
+                            e.target.setStyle({
+                                weight: 2,
+                                color: '#ffec99',
+                                fillColor: '#fab005',
+                                fillOpacity: 0.55
+                            });
+                        },
+                        mouseout: function(e) {
+                            if (locked) return;
+                            geojsonLayer.resetStyle(e.target);
+                        },
+                        click: function(e) {
+                            if (locked) return;
+                            playSound('click');
+                            handleGuess(feature, layer);
+                        }
+                    });
+                }
+            }).addTo(map);
+        }
+
+        function handleGuess(clickedFeature, clickedLayer) {
+            locked = true;
+            const clickedName = clickedFeature.properties.cleanName;
+            const targetName = targetWilaya.properties.cleanName;
+
+            score++;
+
+            if (clickedName === targetName) {
+                streak++;
+                playSound('correct');
+                masteredWilayas.add(targetName);
+
+                clickedLayer.setStyle({
+                    fillColor: '#40c057',
+                    color: '#2b8a3e',
+                    fillOpacity: 0.85,
+                    weight: 2
+                });
+                showNotification(`🎉 Correct! It's ${targetName}.`, true);
+                
+                updateScoreboard();
+
+                setTimeout(() => {
+                    loadNextRound();
+                }, 1500);
+
+            } else {
+                streak = 0;
+                playSound('incorrect');
+                
+                clickedLayer.setStyle({
+                    fillColor: '#fa5252',
+                    color: '#c92a2a',
+                    fillOpacity: 0.85,
+                    weight: 2
+                });
+
+                geojsonLayer.eachLayer(function(l) {
+                    if (l.feature.properties.cleanName === targetName) {
+                        l.setStyle({
+                            fillColor: '#40c057',
+                            color: '#2b8a3e',
+                            fillOpacity: 0.85,
+                            weight: 2
+                        });
+                    }
+                });
+
+                showNotification(`❌ You clicked ${clickedName}! Re-queuing ${targetName}.`, false);
+                updateScoreboard();
+
+                gameQueue.splice(Math.floor(Math.random() * (gameQueue.length + 1)), 0, targetWilaya);
+
+                setTimeout(() => {
+                    loadNextRound();
+                }, 2000);
+            }
+        }
+
+        function endGame() {
+            renderMapLayer();
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('summary-modal').style.display = 'flex';
+            fetchLeaderboard();
+        }
+
+        async function submitScore() {
+            if (!supabaseClient) {
+                alert("Supabase client is not initialized.");
+                return;
+            }
+            if (scoreSubmitted) return;
+            const playerName = document.getElementById('player-name-input').value.trim();
+            
+            if (!playerName) {
+                alert("Please enter your name!");
+                return;
+            }
+
+            const btn = document.getElementById('submit-score-btn');
+            btn.innerText = "Submitting...";
+            btn.disabled = true;
+
+            const { error } = await supabaseClient
+                .from('leaderboard')
+                .insert([{ player_name: playerName, score: score }]);
+
+            if (error) {
+                console.error("Error submitting score:", error);
+                alert("Failed to submit score. Check console.");
+                btn.innerText = "Submit Score";
+                btn.disabled = false;
+            } else {
+                scoreSubmitted = true;
+                document.getElementById('submission-section').innerHTML = `<p style="color: var(--accent-green); font-weight: bold;">Score submitted successfully!</p>`;
+                fetchLeaderboard();
+            }
+        }
+
+        async function fetchLeaderboard() {
+            const tbody = document.getElementById('leaderboard-body');
+            if (!supabaseClient) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Supabase not configured</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">Loading scores...</td></tr>`;
+
+            const { data, error } = await supabaseClient
+                .from('leaderboard')
+                .select('player_name, score')
+                .order('score', { ascending: true })
+                .limit(10);
+
+            if (error) {
+                console.error("Error fetching leaderboard:", error);
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Failed to load leaderboard</td></tr>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">No scores yet. Be the first!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${index + 1}</td>
+                    <td>${escapeHtml(row.player_name)}</td>
+                    <td>${row.score}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function showNotification(text, isSuccess) {
+            let note = document.getElementById('game-alert');
+            note.style.background = isSuccess ? '#2b8a3e' : '#c92a2a';
+            note.style.color = 'white';
+            note.innerText = text;
+            note.classList.add('show');
+
+            setTimeout(() => {
+                note.classList.remove('show');
+            }, 1800);
+        }
+
+        function updateScoreboard() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('streak').innerText = streak;
+        }
+
+        const fallbackGeoJSON = { "type": "FeatureCollection", "features": [] };
+    </script>
+</body>
+</html>
