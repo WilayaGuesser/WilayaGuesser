@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algeria Wilaya Guessr - Device Persistent Slot</title>
+    <title>Algeria Wilaya Guessr - Mode Leaderboards</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
@@ -147,7 +147,7 @@
             border: 1px solid var(--border-color);
             text-align: center;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
-            max-width: 450px;
+            max-width: 480px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
@@ -227,10 +227,35 @@
             background: #252642;
         }
 
+        .tab-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: #1f2038;
+            color: #8c8ca0;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-blue);
+            color: var(--bg-main);
+            border-color: var(--accent-blue);
+        }
+
         .leaderboard-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 10px;
             font-size: 0.95rem;
         }
 
@@ -281,15 +306,16 @@
         <div id="loading-text" style="font-size: 1.1rem; color: #a5a5c0;">Loading Algeria map boundaries...</div>
     </div>
 
+    <!-- Mode Select Modal -->
     <div id="mode-modal" class="modal-overlay" style="display: flex;">
         <div class="modal-content">
             <h2>🇩🇿 Algeria Guessr</h2>
             <p style="color: #8c8ca0; margin-bottom: 20px;">Choose your game mode to begin:</p>
             
-            <button class="mode-btn" onclick="startGameMode('classic')">
+            <button class="mode-btn" onclick="startGameMode('normal')">
                 <div>
-                    <div>Classic Mode</div>
-                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">Master all wilayas (fewest attempts)</span>
+                    <div>Normal Mode</div>
+                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">Timed challenge tracking attempts</span>
                 </div>
                 <span>➡️</span>
             </button>
@@ -302,18 +328,44 @@
                 <span>➡️</span>
             </button>
 
-            <button class="mode-btn" onclick="startGameMode('hardcore')">
+            <button class="mode-btn" onclick="openLeaderboardModal()" style="background: #1f2838; border-color: #4dabf7; margin-top: 15px;">
                 <div>
-                    <div>💀 Hardcore Mode</div>
-                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">One mistake and game over</span>
+                    <div>🌍 Global Leaderboards</div>
+                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">Browse top scores by mode</span>
                 </div>
-                <span>➡️</span>
+                <span>🏆</span>
             </button>
         </div>
     </div>
 
+    <!-- Standalone Leaderboard Modal with Tabs -->
+    <div id="leaderboard-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>🌍 Leaderboards</h2>
+            <div class="tab-container">
+                <button class="tab-btn active" id="tab-normal" onclick="switchLeaderboardTab('normal')">Normal Mode</button>
+                <button class="tab-btn" id="tab-blitz" onclick="switchLeaderboardTab('blitz')">Blitz Mode</button>
+            </div>
+            <div style="max-height: 250px; overflow-y: auto;">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Name</th>
+                            <th id="lb-header-score">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="global-leaderboard-body">
+                        <tr><td colspan="3" style="text-align: center; color: #8c8ca0;">Loading scores...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <button class="btn" style="margin-top: 20px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="closeLeaderboardModal()">Back to Menu</button>
+        </div>
+    </div>
+
     <header>
-        <h1 style="cursor: pointer;" onclick="openModeMenu()" title="Change Mode">🇩🇿 <span id="mode-title-display">Classic</span> <span style="font-size: 0.8rem; background: var(--border-color); padding: 2px 6px; border-radius: 4px;">Change</span></h1>
+        <h1 style="cursor: pointer;" onclick="openModeMenu()" title="Change Mode">🇩🇿 <span id="mode-title-display">Normal</span> <span style="font-size: 0.8rem; background: var(--border-color); padding: 2px 6px; border-radius: 4px;">Change</span></h1>
         <div id="game-dashboard">
             <div class="dash-card">
                 <span class="label">Target Wilaya</span>
@@ -324,8 +376,8 @@
                 <span class="value" id="score" style="color: var(--accent-green);">0</span>
             </div>
             <div class="dash-card" id="card-streak-container">
-                <span class="label">Streak</span>
-                <span class="value" id="streak" style="color: #fab005;">0</span>
+                <span class="label">Time</span>
+                <span class="value" id="timer-display" style="color: #fab005;">0s</span>
             </div>
         </div>
     </header>
@@ -333,6 +385,7 @@
     <div id="map"></div>
     <div id="game-alert"></div>
 
+    <!-- End Game Summary Modal -->
     <div id="summary-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>🏆 Game Over!</h2>
@@ -347,14 +400,14 @@
                 <button class="btn" id="submit-score-btn" onclick="submitScore()">Update My Device Score</button>
             </div>
             <div id="leaderboard-container" style="margin-top: 25px;">
-                <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px;">🌍 Global Leaderboard</h3>
+                <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px;" id="summary-lb-title">🌍 Global Leaderboard</h3>
                 <div style="max-height: 180px; overflow-y: auto;">
                     <table class="leaderboard-table">
                         <thead>
                             <tr>
                                 <th>Rank</th>
                                 <th>Name</th>
-                                <th>Score</th>
+                                <th id="summary-lb-header">Score</th>
                             </tr>
                         </thead>
                         <tbody id="leaderboard-body">
@@ -377,7 +430,6 @@
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
 
-        // Generate or fetch a unique Device ID stored on this browser
         let deviceId = localStorage.getItem('algeria_guessr_device_id');
         if (!deviceId) {
             deviceId = 'dev_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -388,14 +440,14 @@
         let wilayasData = [];
         let gameQueue = [];
         let targetWilaya = null;
-        let score = 0;
-        let streak = 0;
-        let currentMode = 'classic';
+        let score = 0; // In Normal mode: total attempts. In Blitz mode: correct matches.
+        let matchTimer = 0; // Elapsed seconds for Normal mode
+        let currentMode = 'normal';
         let locked = false;
         let masteredWilayas = new Set();
         let scoreSubmitted = false;
-        let blitzTimer = null;
-        let timeLeft = 60;
+        let gameTimerInterval = null;
+        let activeLbTab = 'normal';
 
         window.addEventListener('DOMContentLoaded', () => {
             const savedName = localStorage.getItem('algeria_guessr_player_name');
@@ -470,8 +522,67 @@
         }
 
         function openModeMenu() {
-            if (blitzTimer) clearInterval(blitzTimer);
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
             document.getElementById('summary-modal').style.display = 'none';
+            document.getElementById('leaderboard-modal').style.display = 'none';
+            document.getElementById('mode-modal').style.display = 'flex';
+        }
+
+        function openLeaderboardModal() {
+            document.getElementById('mode-modal').style.display = 'none';
+            document.getElementById('leaderboard-modal').style.display = 'flex';
+            switchLeaderboardTab('normal');
+        }
+
+        function switchLeaderboardTab(tab) {
+            activeLbTab = tab;
+            document.getElementById('tab-normal').classList.toggle('active', tab === 'normal');
+            document.getElementById('tab-blitz', tab).classList.toggle('active', tab === 'blitz');
+            
+            const headerScore = document.getElementById('lb-header-score');
+            headerScore.innerText = (tab === 'normal') ? 'Time (Attempts)' : 'Correct Hits';
+            fetchGlobalLeaderboard(tab);
+        }
+
+        async function fetchGlobalLeaderboard(modeKey) {
+            const tbody = document.getElementById('global-leaderboard-body');
+            if (!supabaseClient) { tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Supabase missing</td></tr>`; return; }
+
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">Loading scores...</td></tr>`;
+
+            // Normal mode stores score as time elapsed in seconds (lower is better -> ascending: true)
+            // Blitz mode stores score as correct count (higher is better -> ascending: false)
+            const isAscending = (modeKey === 'normal');
+
+            const { data, error } = await supabaseClient
+                .from('leaderboard')
+                .select('player_name, score, mode')
+                .eq('mode', modeKey)
+                .order('score', { ascending: isAscending })
+                .limit(15);
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">No scores yet for ${modeKey} mode!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                let displayVal = row.score;
+                if (modeKey === 'normal') {
+                    displayVal = `${row.score}s`;
+                    if (row.attempts !== undefined) {
+                        displayVal += ` (${row.attempts} att)`;
+                    }
+                }
+                tr.innerHTML = `<td>#${index + 1}</td><td>${escapeHtml(row.player_name)}</td><td>${displayVal}</td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function closeLeaderboardModal() {
+            document.getElementById('leaderboard-modal').style.display = 'none';
             document.getElementById('mode-modal').style.display = 'flex';
         }
 
@@ -481,10 +592,10 @@
             document.getElementById('summary-modal').style.display = 'none';
 
             score = 0;
-            streak = 0;
+            matchTimer = 0;
             scoreSubmitted = false;
             masteredWilayas.clear();
-            if (blitzTimer) clearInterval(blitzTimer);
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
 
             const btn = document.getElementById('submit-score-btn');
             btn.innerText = "Update My Device Score";
@@ -493,35 +604,35 @@
 
             const titleDisplay = document.getElementById('mode-title-display');
             const metricTitle = document.getElementById('metric-title');
-            const streakContainer = document.getElementById('card-streak-container');
+            const timerLabelContainer = document.getElementById('card-streak-container');
 
-            if (mode === 'classic') {
-                titleDisplay.innerText = "Classic";
+            if (mode === 'normal') {
+                titleDisplay.innerText = "Normal";
                 metricTitle.innerText = "Attempts";
-                streakContainer.style.display = 'flex';
+                timerLabelContainer.style.display = 'flex';
+                document.getElementById('timer-display').innerText = "0s";
                 gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
+
+                gameTimerInterval = setInterval(() => {
+                    matchTimer++;
+                    document.getElementById('timer-display').innerText = matchTimer + "s";
+                }, 1000);
             } else if (mode === 'blitz') {
                 titleDisplay.innerText = "Blitz (60s)";
                 metricTitle.innerText = "Correct";
-                streakContainer.style.display = 'none';
+                timerLabelContainer.style.display = 'flex';
                 gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
-                timeLeft = 60;
-                metricTitle.innerText = "Time Left";
-                document.getElementById('score').innerText = timeLeft + "s";
+                matchTimer = 60;
+                document.getElementById('timer-display').innerText = matchTimer + "s";
                 
-                blitzTimer = setInterval(() => {
-                    timeLeft--;
-                    document.getElementById('score').innerText = timeLeft + "s";
-                    if (timeLeft <= 0) {
-                        clearInterval(blitzTimer);
+                gameTimerInterval = setInterval(() => {
+                    matchTimer--;
+                    document.getElementById('timer-display').innerText = matchTimer + "s";
+                    if (matchTimer <= 0) {
+                        clearInterval(gameTimerInterval);
                         endGame();
                     }
                 }, 1000);
-            } else if (mode === 'hardcore') {
-                titleDisplay.innerText = "Hardcore";
-                metricTitle.innerText = "Score";
-                streakContainer.style.display = 'flex';
-                gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
             }
 
             updateScoreboard();
@@ -574,14 +685,11 @@
             const targetName = targetWilaya.properties.cleanName;
 
             if (clickedName === targetName) {
-                streak++;
                 playSound('correct');
                 masteredWilayas.add(targetName);
                 clickedLayer.setStyle({ fillColor: '#40c057', color: '#2b8a3e', fillOpacity: 0.85, weight: 2 });
                 
-                if (currentMode === 'classic') score++;
                 if (currentMode === 'blitz') score++;
-                if (currentMode === 'hardcore') score++;
 
                 showNotification(`🎉 Correct! It's ${targetName}.`, true);
                 updateScoreboard();
@@ -596,14 +704,7 @@
                     }
                 });
 
-                if (currentMode === 'hardcore') {
-                    showNotification(`💀 Hardcore Game Over! You missed ${targetName}.`, false);
-                    setTimeout(() => endGame(), 2000);
-                    return;
-                }
-
-                streak = 0;
-                if (currentMode === 'classic') score++;
+                if (currentMode === 'normal') score++; // increment attempts counter
                 showNotification(`❌ You clicked ${clickedName}! Re-queuing ${targetName}.`, false);
                 updateScoreboard();
                 gameQueue.splice(Math.floor(Math.random() * (gameQueue.length + 1)), 0, targetWilaya);
@@ -612,26 +713,28 @@
         }
 
         function endGame() {
-            if (blitzTimer) clearInterval(blitzTimer);
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
             renderMapLayer();
 
-            let finalVal = score;
-            let summaryText = `You played ${currentMode.toUpperCase()} mode!`;
-            let scoreLabelText = "Final Score:";
+            let finalVal = 0;
+            let summaryText = `You completed Normal Mode!`;
+            let scoreLabelText = "Total Time Elapsed:";
 
-            if (currentMode === 'classic') {
-                scoreLabelText = "Total Attempts (Lower is better):";
+            if (currentMode === 'normal') {
+                finalVal = matchTimer; // Final score tracked as time
+                summaryText = `Finished all wilayas in ${matchTimer} seconds with ${score} total attempts!`;
+                scoreLabelText = "Final Time (Lower is better):";
             } else if (currentMode === 'blitz') {
+                finalVal = score;
+                summaryText = `Blitz speedrun concluded!`;
                 scoreLabelText = "Total Correct Hits in 60s:";
-            } else if (currentMode === 'hardcore') {
-                scoreLabelText = "Correct Wilayas Before Strike:";
             }
 
             document.getElementById('final-score-label').innerText = scoreLabelText;
-            document.getElementById('final-score').innerText = finalVal;
+            document.getElementById('final-score').innerText = currentMode === 'normal' ? `${finalVal}s (${score} attempts)` : finalVal;
             document.getElementById('summary-message').innerText = summaryText;
             document.getElementById('summary-modal').style.display = 'flex';
-            fetchLeaderboard();
+            fetchSummaryLeaderboard();
         }
 
         async function submitScore() {
@@ -652,37 +755,47 @@
             btn.innerText = "Updating...";
             btn.disabled = true;
 
-            // We upsert using deviceId as the unique conflict target
+            // Save payload including specific mode tracking so separate leaderboards filter cleanly
+            const scoreToSubmit = (currentMode === 'normal') ? matchTimer : score;
+
             const { error } = await supabaseClient
                 .from('leaderboard')
                 .upsert({ 
-                    device_id: deviceId, 
+                    device_id: `${deviceId}_${currentMode}`, 
                     player_name: `${playerName} [${currentMode.toUpperCase()}]`, 
-                    score: score 
+                    score: scoreToSubmit,
+                    mode: currentMode,
+                    attempts: currentMode === 'normal' ? score : null
                 }, { onConflict: 'device_id' });
 
             if (error) {
                 console.error("Error updating score:", error);
-                alert("Failed to update score. Check database schema for device_id column.");
+                alert("Failed to update score. Check database columns for mode support.");
                 btn.innerText = "Update My Device Score";
                 btn.disabled = false;
             } else {
                 scoreSubmitted = true;
                 document.getElementById('submission-section').innerHTML = `<p style="color: var(--accent-green); font-weight: bold;">Device slot updated successfully!</p>`;
-                fetchLeaderboard();
+                fetchSummaryLeaderboard();
             }
         }
 
-        async function fetchLeaderboard() {
+        async function fetchSummaryLeaderboard() {
             const tbody = document.getElementById('leaderboard-body');
+            document.getElementById('summary-lb-title').innerText = `🌍 ${currentMode.toUpperCase()} Mode Leaderboard`;
+            document.getElementById('summary-lb-header').innerText = (currentMode === 'normal') ? 'Time (Attempts)' : 'Score';
+
             if (!supabaseClient) { tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Supabase missing</td></tr>`; return; }
 
             tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">Loading scores...</td></tr>`;
 
+            const isAscending = (currentMode === 'normal');
+
             const { data, error } = await supabaseClient
                 .from('leaderboard')
-                .select('player_name, score')
-                .order('score', { ascending: currentMode === 'classic' })
+                .select('player_name, score, mode, attempts')
+                .eq('mode', currentMode)
+                .order('score', { ascending: isAscending })
                 .limit(10);
 
             if (error || !data || data.length === 0) {
@@ -693,7 +806,14 @@
             tbody.innerHTML = '';
             data.forEach((row, index) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>#${index + 1}</td><td>${escapeHtml(row.player_name)}</td><td>${row.score}</td>`;
+                let displayVal = row.score;
+                if (currentMode === 'normal') {
+                    displayVal = `${row.score}s`;
+                    if (row.attempts !== undefined && row.attempts !== null) {
+                        displayVal += ` (${row.attempts} att)`;
+                    }
+                }
+                tr.innerHTML = `<td>#${index + 1}</td><td>${escapeHtml(row.player_name)}</td><td>${displayVal}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -712,10 +832,11 @@
         }
 
         function updateScoreboard() {
-            if (currentMode !== 'blitz') {
-                document.getElementById('score').innerText = score;
+            if (currentMode === 'normal') {
+                document.getElementById('score').innerText = score; // shows attempts
+            } else if (currentMode === 'blitz') {
+                document.getElementById('score').innerText = score; // shows correct hits
             }
-            document.getElementById('streak').innerText = streak;
         }
     </script>
 </body>
