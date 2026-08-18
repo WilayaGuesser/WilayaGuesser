@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Algeria Wilaya Guessr - Mode Leaderboards</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -16,6 +16,10 @@
             --text-main: #f1f1f6;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
@@ -23,6 +27,7 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            height: 100dvh; /* Handles mobile viewport height nicely */
             background-color: var(--bg-main);
             color: var(--text-main);
             overflow: hidden;
@@ -31,10 +36,12 @@
         header {
             background-color: var(--panel-bg);
             backdrop-filter: blur(10px);
-            padding: 12px 25px;
+            padding: 10px 15px;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
             border-bottom: 1px solid var(--border-color);
             z-index: 10;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -42,46 +49,47 @@
 
         h1 {
             margin: 0;
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             color: var(--text-main);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 6px;
         }
 
         #game-dashboard {
             display: flex;
-            gap: 15px;
+            gap: 8px;
             align-items: center;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
+            flex-wrap: wrap;
         }
 
         .dash-card {
             background: rgba(25, 25, 40, 0.6);
             border: 1px solid var(--border-color);
-            padding: 6px 14px;
-            border-radius: 8px;
+            padding: 4px 10px;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
         .dash-card span.label {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: #8c8ca0;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .dash-card span.value {
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             font-weight: bold;
             color: var(--text-main);
         }
 
         #target-wilaya-name {
             color: var(--accent-blue);
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: 800;
             text-shadow: 0 0 12px rgba(77, 171, 247, 0.4);
         }
@@ -138,38 +146,40 @@
             z-index: 2000;
             justify-content: center;
             align-items: center;
+            padding: 15px;
         }
 
         .modal-content {
             background: #151522;
-            padding: 30px 40px;
+            padding: 20px;
             border-radius: 16px;
             border: 1px solid var(--border-color);
             text-align: center;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             max-width: 480px;
-            width: 90%;
-            max-height: 90vh;
+            width: 100%;
+            max-height: 85vh;
             overflow-y: auto;
         }
 
         .modal-content h2 {
             margin-top: 0;
             color: var(--accent-blue);
-            font-size: 1.8rem;
+            font-size: 1.5rem;
         }
 
         .stat-box {
             background: #1f2038;
-            margin: 15px 0;
-            padding: 14px;
+            margin: 10px 0;
+            padding: 10px;
             border-radius: 10px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             border: 1px solid var(--border-color);
         }
 
         input[type="text"] {
-            width: 80%;
+            width: 100%;
+            max-width: 300px;
             padding: 10px 14px;
             background: #0b0b14;
             border: 1px solid var(--border-color);
@@ -189,8 +199,8 @@
             background: var(--accent-blue);
             color: var(--bg-main);
             border: none;
-            padding: 12px 28px;
-            font-size: 1rem;
+            padding: 10px 20px;
+            font-size: 0.95rem;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
@@ -208,11 +218,11 @@
             background: #1f2038;
             color: var(--text-main);
             border: 1px solid var(--border-color);
-            padding: 14px 20px;
+            padding: 12px 16px;
             width: 100%;
             border-radius: 10px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: bold;
             margin: 8px 0;
             text-align: left;
@@ -229,7 +239,7 @@
 
         .tab-container {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 15px;
         }
 
@@ -238,11 +248,11 @@
             background: #1f2038;
             color: #8c8ca0;
             border: 1px solid var(--border-color);
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: all 0.2s;
         }
 
@@ -255,19 +265,19 @@
         .leaderboard-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 0.95rem;
+            margin-top: 5px;
+            font-size: 0.85rem;
         }
 
         .leaderboard-table th, .leaderboard-table td {
-            padding: 10px;
+            padding: 8px 6px;
             border-bottom: 1px solid var(--border-color);
             text-align: left;
         }
 
         .leaderboard-table th {
             color: #8c8ca0;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
         }
 
@@ -277,12 +287,12 @@
 
         #game-alert {
             position: fixed;
-            bottom: 35px;
+            bottom: 25px;
             left: 50%;
             transform: translateX(-50%) translateY(20px);
-            padding: 14px 28px;
-            border-radius: 10px;
-            font-size: 1.1rem;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
             font-weight: bold;
             z-index: 1000;
             box-shadow: 0 8px 25px rgba(0,0,0,0.6);
@@ -290,11 +300,35 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             pointer-events: none;
             border: 1px solid rgba(255,255,255,0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
         }
 
         #game-alert.show {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
+        }
+
+        /* Responsive tweaks for very small mobile screens */
+        @media (max-width: 480px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+                padding: 8px 12px;
+            }
+            h1 {
+                font-size: 1rem;
+                justify-content: space-between;
+            }
+            #game-dashboard {
+                justify-content: space-between;
+            }
+            .dash-card {
+                flex: 1;
+                min-width: 30%;
+            }
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -303,19 +337,19 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <div id="loading-text" style="font-size: 1.1rem; color: #a5a5c0;">Loading Algeria map boundaries...</div>
+        <div id="loading-text" style="font-size: 1rem; color: #a5a5c0;">Loading Algeria map boundaries...</div>
     </div>
 
     <!-- Mode Select Modal -->
     <div id="mode-modal" class="modal-overlay" style="display: flex;">
         <div class="modal-content">
             <h2>🇩🇿 Algeria Guessr</h2>
-            <p style="color: #8c8ca0; margin-bottom: 20px;">Choose your game mode to begin:</p>
+            <p style="color: #8c8ca0; margin-bottom: 15px; font-size: 0.9rem;">Choose your game mode to begin:</p>
             
             <button class="mode-btn" onclick="startGameMode('normal')">
                 <div>
                     <div>Normal Mode</div>
-                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">Timed challenge tracking attempts</span>
+                    <span style="font-size: 0.75rem; color: #8c8ca0; font-weight: normal;">Timed challenge tracking attempts</span>
                 </div>
                 <span>➡️</span>
             </button>
@@ -323,15 +357,15 @@
             <button class="mode-btn" onclick="startGameMode('blitz')">
                 <div>
                     <div>⚡ Blitz Mode</div>
-                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">60-second speedrun rush</span>
+                    <span style="font-size: 0.75rem; color: #8c8ca0; font-weight: normal;">60-second speedrun rush</span>
                 </div>
                 <span>➡️</span>
             </button>
 
-            <button class="mode-btn" onclick="openLeaderboardModal()" style="background: #1f2838; border-color: #4dabf7; margin-top: 15px;">
+            <button class="mode-btn" onclick="openLeaderboardModal()" style="background: #1f2838; border-color: #4dabf7; margin-top: 10px;">
                 <div>
                     <div>🌍 Global Leaderboards</div>
-                    <span style="font-size: 0.8rem; color: #8c8ca0; font-weight: normal;">Browse top scores by mode</span>
+                    <span style="font-size: 0.75rem; color: #8c8ca0; font-weight: normal;">Browse top scores by mode</span>
                 </div>
                 <span>🏆</span>
             </button>
@@ -346,7 +380,7 @@
                 <button class="tab-btn active" id="tab-normal" onclick="switchLeaderboardTab('normal')">Normal Mode</button>
                 <button class="tab-btn" id="tab-blitz" onclick="switchLeaderboardTab('blitz')">Blitz Mode</button>
             </div>
-            <div style="max-height: 250px; overflow-y: auto;">
+            <div style="max-height: 220px; overflow-y: auto;">
                 <table class="leaderboard-table">
                     <thead>
                         <tr>
@@ -360,14 +394,17 @@
                     </tbody>
                 </table>
             </div>
-            <button class="btn" style="margin-top: 20px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="closeLeaderboardModal()">Back to Menu</button>
+            <button class="btn" style="margin-top: 15px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="closeLeaderboardModal()">Back to Menu</button>
         </div>
     </div>
 
     <header>
-        <h1 style="cursor: pointer;" onclick="openModeMenu()" title="Change Mode">🇩🇿 <span id="mode-title-display">Normal</span> <span style="font-size: 0.8rem; background: var(--border-color); padding: 2px 6px; border-radius: 4px;">Change</span></h1>
+        <h1 style="cursor: pointer;" onclick="openModeMenu()" title="Change Mode">
+            <span>🇩🇿 <span id="mode-title-display">Normal</span></span> 
+            <span style="font-size: 0.7rem; background: var(--border-color); padding: 2px 6px; border-radius: 4px; font-weight: normal;">Change</span>
+        </h1>
         <div id="game-dashboard">
-            <div class="dash-card">
+            <div class="dash-card" style="flex-grow: 2;">
                 <span class="label">Target Wilaya</span>
                 <span class="value" id="target-wilaya-name">Preparing...</span>
             </div>
@@ -389,19 +426,19 @@
     <div id="summary-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>🏆 Game Over!</h2>
-            <p id="summary-message">Great job exploring the map!</p>
+            <p id="summary-message" style="font-size: 0.95rem;">Great job exploring the map!</p>
             <div class="stat-box">
                 <span id="final-score-label">Final Score:</span> <strong id="final-score" style="color: var(--accent-green);">0</strong>
             </div>
             <div id="submission-section">
-                <p style="margin: 5px 0 5px; font-size: 0.9rem;">Your Device Profile Name:</p>
+                <p style="margin: 5px 0; font-size: 0.85rem;">Your Device Profile Name:</p>
                 <input type="text" id="player-name-input" placeholder="Your Name" maxlength="20">
                 <br>
                 <button class="btn" id="submit-score-btn" onclick="submitScore()">Update My Device Score</button>
             </div>
-            <div id="leaderboard-container" style="margin-top: 25px;">
-                <h3 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px;" id="summary-lb-title">🌍 Global Leaderboard</h3>
-                <div style="max-height: 180px; overflow-y: auto;">
+            <div id="leaderboard-container" style="margin-top: 15px;">
+                <h3 style="color: var(--text-main); font-size: 1rem; margin-bottom: 5px;" id="summary-lb-title">🌍 Global Leaderboard</h3>
+                <div style="max-height: 150px; overflow-y: auto;">
                     <table class="leaderboard-table">
                         <thead>
                             <tr>
@@ -416,7 +453,7 @@
                     </table>
                 </div>
             </div>
-            <button class="btn" style="margin-top: 20px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="openModeMenu()">Change Mode / Play Again</button>
+            <button class="btn" style="margin-top: 15px; width: 100%; background: #2a2a40; color: var(--text-main);" onclick="openModeMenu()">Change Mode / Play Again</button>
         </div>
     </div>
 
@@ -440,8 +477,8 @@
         let wilayasData = [];
         let gameQueue = [];
         let targetWilaya = null;
-        let score = 0; // In Normal mode: total attempts. In Blitz mode: correct matches.
-        let matchTimer = 0; // Elapsed seconds for Normal mode
+        let score = 0; 
+        let matchTimer = 0; 
         let currentMode = 'normal';
         let locked = false;
         let masteredWilayas = new Set();
@@ -495,7 +532,7 @@
             } catch (e) { console.log("Audio skipped", e); }
         }
 
-        map = L.map('map', { center: [28.0339, 1.6596], zoom: 5, minZoom: 5, maxZoom: 9 });
+        map = L.map('map', { center: [28.0339, 1.6596], zoom: 5, minZoom: 4, maxZoom: 9 });
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; OpenStreetMap & CARTO',
@@ -537,7 +574,7 @@
         function switchLeaderboardTab(tab) {
             activeLbTab = tab;
             document.getElementById('tab-normal').classList.toggle('active', tab === 'normal');
-            document.getElementById('tab-blitz', tab).classList.toggle('active', tab === 'blitz');
+            document.getElementById('tab-blitz').classList.toggle('active', tab === 'blitz');
             
             const headerScore = document.getElementById('lb-header-score');
             headerScore.innerText = (tab === 'normal') ? 'Time (Attempts)' : 'Correct Hits';
@@ -550,8 +587,6 @@
 
             tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">Loading scores...</td></tr>`;
 
-            // Normal mode stores score as time elapsed in seconds (lower is better -> ascending: true)
-            // Blitz mode stores score as correct count (higher is better -> ascending: false)
             const isAscending = (modeKey === 'normal');
 
             const { data, error } = await supabaseClient
@@ -562,7 +597,7 @@
                 .limit(15);
 
             if (error || !data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">No scores yet for ${modeKey} mode!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">No scores yet!</td></tr>`;
                 return;
             }
 
@@ -618,7 +653,7 @@
                     document.getElementById('timer-display').innerText = matchTimer + "s";
                 }, 1000);
             } else if (mode === 'blitz') {
-                titleDisplay.innerText = "Blitz (60s)";
+                titleDisplay.innerText = "Blitz";
                 metricTitle.innerText = "Correct";
                 timerLabelContainer.style.display = 'flex';
                 gameQueue = [...wilayasData].sort(() => Math.random() - 0.5);
@@ -704,8 +739,8 @@
                     }
                 });
 
-                if (currentMode === 'normal') score++; // increment attempts counter
-                showNotification(`❌ You clicked ${clickedName}! Re-queuing ${targetName}.`, false);
+                if (currentMode === 'normal') score++; 
+                showNotification(`❌ Incorrect! It was ${targetName}.`, false);
                 updateScoreboard();
                 gameQueue.splice(Math.floor(Math.random() * (gameQueue.length + 1)), 0, targetWilaya);
                 setTimeout(() => loadNextRound(), 1800);
@@ -721,17 +756,17 @@
             let scoreLabelText = "Total Time Elapsed:";
 
             if (currentMode === 'normal') {
-                finalVal = matchTimer; // Final score tracked as time
-                summaryText = `Finished all wilayas in ${matchTimer} seconds with ${score} total attempts!`;
-                scoreLabelText = "Final Time (Lower is better):";
+                finalVal = matchTimer; 
+                summaryText = `Finished all wilayas in ${matchTimer}s with ${score} attempts!`;
+                scoreLabelText = "Final Time:";
             } else if (currentMode === 'blitz') {
                 finalVal = score;
                 summaryText = `Blitz speedrun concluded!`;
-                scoreLabelText = "Total Correct Hits in 60s:";
+                scoreLabelText = "Total Correct Hits:";
             }
 
             document.getElementById('final-score-label').innerText = scoreLabelText;
-            document.getElementById('final-score').innerText = currentMode === 'normal' ? `${finalVal}s (${score} attempts)` : finalVal;
+            document.getElementById('final-score').innerText = currentMode === 'normal' ? `${finalVal}s (${score} att)` : finalVal;
             document.getElementById('summary-message').innerText = summaryText;
             document.getElementById('summary-modal').style.display = 'flex';
             fetchSummaryLeaderboard();
@@ -755,7 +790,6 @@
             btn.innerText = "Updating...";
             btn.disabled = true;
 
-            // Save payload including specific mode tracking so separate leaderboards filter cleanly
             const scoreToSubmit = (currentMode === 'normal') ? matchTimer : score;
 
             const { error } = await supabaseClient
@@ -770,20 +804,20 @@
 
             if (error) {
                 console.error("Error updating score:", error);
-                alert("Failed to update score. Check database columns for mode support.");
+                alert("Failed to update score.");
                 btn.innerText = "Update My Device Score";
                 btn.disabled = false;
             } else {
                 scoreSubmitted = true;
-                document.getElementById('submission-section').innerHTML = `<p style="color: var(--accent-green); font-weight: bold;">Device slot updated successfully!</p>`;
+                document.getElementById('submission-section').innerHTML = `<p style="color: var(--accent-green); font-weight: bold; font-size: 0.85rem;">Device slot updated!</p>`;
                 fetchSummaryLeaderboard();
             }
         }
 
         async function fetchSummaryLeaderboard() {
             const tbody = document.getElementById('leaderboard-body');
-            document.getElementById('summary-lb-title').innerText = `🌍 ${currentMode.toUpperCase()} Mode Leaderboard`;
-            document.getElementById('summary-lb-header').innerText = (currentMode === 'normal') ? 'Time (Attempts)' : 'Score';
+            document.getElementById('summary-lb-title').innerText = `🌍 ${currentMode.toUpperCase()} Leaderboard`;
+            document.getElementById('summary-lb-header').innerText = (currentMode === 'normal') ? 'Time' : 'Score';
 
             if (!supabaseClient) { tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--accent-red);">Supabase missing</td></tr>`; return; }
 
@@ -799,7 +833,7 @@
                 .limit(10);
 
             if (error || !data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">No scores yet. Be the first!</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #8c8ca0;">No scores yet.</td></tr>`;
                 return;
             }
 
@@ -810,7 +844,7 @@
                 if (currentMode === 'normal') {
                     displayVal = `${row.score}s`;
                     if (row.attempts !== undefined && row.attempts !== null) {
-                        displayVal += ` (${row.attempts} att)`;
+                        displayVal += ` (${row.attempts}att)`;
                     }
                 }
                 tr.innerHTML = `<td>#${index + 1}</td><td>${escapeHtml(row.player_name)}</td><td>${displayVal}</td>`;
@@ -832,11 +866,7 @@
         }
 
         function updateScoreboard() {
-            if (currentMode === 'normal') {
-                document.getElementById('score').innerText = score; // shows attempts
-            } else if (currentMode === 'blitz') {
-                document.getElementById('score').innerText = score; // shows correct hits
-            }
+            document.getElementById('score').innerText = score;
         }
     </script>
 </body>
